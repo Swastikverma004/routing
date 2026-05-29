@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Wheat Flour Route Manager - Admin</title>
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Leaflet JS Map Styles & Scripts -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-wheat-awn"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>Wheat Flour Dispatch</h1>
+                    <p>Daily Smart Route Planner & Optimiser</p>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <button onclick="triggerFullReoptimization()" class="btn btn-secondary" style="width: auto;">
+                    <i class="fa-solid fa-arrows-rotate"></i> Re-Calculate All Routes
+                </button>
+            </div>
+        </header>
+        
+        <!-- Main Workspace -->
+        <div class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-scrollable">
+                    
+                    <!-- Stats Grid -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-val" id="stat-orders">-</div>
+                            <div class="stat-lbl">Orders</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-val" id="stat-distance">-</div>
+                            <div class="stat-lbl">Tot Km</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-val" id="stat-routes">-</div>
+                            <div class="stat-lbl">Partners</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Add Mid-Day Order Form -->
+                    <div class="glass-panel" style="padding: 16px; margin-bottom: 20px;">
+                        <h3 style="font-size: 0.85rem; font-weight: 700; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary);">
+                            <i class="fa-solid fa-plus-circle"></i> Add Mid-Day Order
+                        </h3>
+                        <form id="midday-order-form" onsubmit="submitMiddayOrder(event)">
+                            <div class="form-group">
+                                <label class="form-label">Customer Name</label>
+                                <input type="text" id="cust-name" class="form-input" placeholder="e.g. Ramesh Kumar" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Phone</label>
+                                <input type="text" id="cust-phone" class="form-input" placeholder="e.g. +91 98989 12345" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Delivery Address (Delhi)</label>
+                                <input type="text" id="cust-addr" class="form-input" placeholder="e.g. 10 Saket District Centre" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Quantity (Flour Bags)</label>
+                                <input type="number" id="cust-qty" class="form-input" min="1" max="20" value="2" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="btn-submit-order">
+                                <i class="fa-solid fa-truck-ramp-box"></i> Dispatch & Route Order
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Active Routes Section -->
+                    <div style="margin-top: 10px;">
+                        <h3 style="font-size: 0.85rem; font-weight: 700; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-main);">
+                            Active Delivery Routes
+                        </h3>
+                        <div id="routes-container">
+                            <!-- Populated dynamically via Javascript -->
+                            <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 20px;">
+                                <i class="fa-solid fa-spinner fa-spin" style="margin-right: 8px;"></i> Loading active routes...
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </aside>
+            
+            <!-- Map Section -->
+            <main class="map-container">
+                <div id="map"></div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Inject data variables from backend -->
+    <script>
+        const WAREHOUSE_LAT = {{ warehouse.latitude if warehouse else 28.6304 }};
+        const WAREHOUSE_LON = {{ warehouse.longitude if warehouse else 77.2177 }};
+        const WAREHOUSE_NAME = "{{ warehouse.name if warehouse else 'Main Warehouse' }}";
+    </script>
+    <!-- Map Logic Javascript -->
+    <script src="/static/js/admin.js"></script>
+</body>
+</html>
