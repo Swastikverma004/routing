@@ -308,3 +308,53 @@ async function submitMiddayOrder(event) {
         btn.disabled = false;
     }
 }
+
+// Submit warehouse update
+async function submitWarehouse(event) {
+    event.preventDefault();
+    
+    const btn = document.getElementById("btn-submit-wh");
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Geocoding...`;
+    btn.disabled = true;
+    
+    const payload = {
+        name: document.getElementById("wh-name").value,
+        address: document.getElementById("wh-addr").value
+    };
+    
+    try {
+        const response = await fetch("/api/warehouse", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        
+        if (response.ok) {
+            const res = await response.json();
+            alert("Warehouse location configured successfully in Mohali!");
+            
+            // Reposition warehouse marker on map
+            if (warehouseMarker) {
+                warehouseMarker.setLatLng([res.latitude, res.longitude]);
+                warehouseMarker.setPopupContent(`<strong>${res.name}</strong><br>${res.address}`);
+            }
+            
+            // Center map on new warehouse
+            map.setView([res.latitude, res.longitude], 13);
+            
+            // Reload dashboard data
+            await loadDashboardData();
+        } else {
+            const err = await response.json();
+            alert("Setting warehouse failed: " + (err.detail || "Unknown error"));
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Network connection error.");
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+

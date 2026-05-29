@@ -58,6 +58,26 @@
                         </div>
                     </div>
                     
+                    <!-- Configure Warehouse Form -->
+                    <div class="glass-panel" style="padding: 16px; margin-bottom: 20px;">
+                        <h3 style="font-size: 0.85rem; font-weight: 700; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary);">
+                            <i class="fa-solid fa-warehouse"></i> Configure Warehouse
+                        </h3>
+                        <form id="warehouse-form" onsubmit="submitWarehouse(event)">
+                            <div class="form-group">
+                                <label class="form-label">Warehouse Name</label>
+                                <input type="text" id="wh-name" class="form-input" placeholder="e.g. Mohali Central Depot" value="{{ warehouse.name if warehouse else 'Mohali Central Depot' }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Address (Mohali)</label>
+                                <input type="text" id="wh-addr" class="form-input" placeholder="e.g. Phase 7" value="{{ warehouse.address if warehouse else 'Phase 7' }}" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="btn-submit-wh">
+                                <i class="fa-solid fa-circle-check"></i> Set Warehouse
+                            </button>
+                        </form>
+                    </div>
+
                     <!-- Add Mid-Day Order Form -->
                     <div class="glass-panel" style="padding: 16px; margin-bottom: 20px;">
                         <h3 style="font-size: 0.85rem; font-weight: 700; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary);">
@@ -73,8 +93,8 @@
                                 <input type="text" id="cust-phone" class="form-input" placeholder="e.g. +91 98989 12345" required>
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Delivery Address (Delhi)</label>
-                                <input type="text" id="cust-addr" class="form-input" placeholder="e.g. 10 Saket District Centre" required>
+                                <label class="form-label">Delivery Address (Mohali)</label>
+                                <input type="text" id="cust-addr" class="form-input" placeholder="e.g. Phase 3B2, Mohali" required>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Quantity (Flour Bags)</label>
@@ -111,9 +131,9 @@
 
     <!-- Inject data variables from backend -->
     <script>
-        const WAREHOUSE_LAT = {{ warehouse.latitude if warehouse else 28.6304 }};
-        const WAREHOUSE_LON = {{ warehouse.longitude if warehouse else 77.2177 }};
-        const WAREHOUSE_NAME = "{{ warehouse.name if warehouse else 'Main Warehouse' }}";
+        const WAREHOUSE_LAT = {{ warehouse.latitude if warehouse else 30.7042 }};
+        const WAREHOUSE_LON = {{ warehouse.longitude if warehouse else 76.7179 }};
+        const WAREHOUSE_NAME = "{{ warehouse.name if warehouse else 'Main Wheat Flour Warehouse (Mohali)' }}";
     </script>
     <!-- Map Logic Javascript -->
     <script src="/static/js/admin.js"></script>

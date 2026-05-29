@@ -7,11 +7,52 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 import database
-from database import get_db, Warehouse, DeliveryPartner, Customer, Order, Route, engine, Base
+from database import get_db, Warehouse, DeliveryPartner, Customer, Order, Route, engine, Base, SessionLocal
 from optimizer import run_delivery_optimization, handle_midday_new_order
 
 # Create database tables automatically on startup
 Base.metadata.create_all(bind=engine)
+
+# Auto-seed default warehouse and partners if database is empty (crucial for clean deployments like Render)
+def auto_seed_db():
+    db = SessionLocal()
+    try:
+        if db.query(Warehouse).count() == 0:
+            print("Auto-seeding default Mohali warehouse...")
+            from config import DEFAULT_WAREHOUSE_NAME, DEFAULT_WAREHOUSE_ADDRESS, DEFAULT_WAREHOUSE_LAT, DEFAULT_WAREHOUSE_LON
+            warehouse = Warehouse(
+                name=DEFAULT_WAREHOUSE_NAME,
+                address=DEFAULT_WAREHOUSE_ADDRESS,
+                latitude=DEFAULT_WAREHOUSE_LAT,
+                longitude=DEFAULT_WAREHOUSE_LON
+            )
+            db.add(warehouse)
+            db.commit()
+            
+        if db.query(DeliveryPartner).count() == 0:
+            print("Auto-seeding 15 active delivery partners...")
+            names = [
+                "Aarav Sharma", "Kabir Singh", "Vihaan Patel", "Aditya Reddy", 
+                "Ishaan Gupta", "Sai Kumar", "Arjun Verma", "Rohan Mehta", 
+                "Krishna Murthy", "Pranav Joshi", "Devendra Singh", "Yash Wardhan",
+                "Anirudh Nair", "Madhav Rao", "Kartik Iyer"
+            ]
+            for i, name in enumerate(names):
+                partner = DeliveryPartner(
+                    name=name,
+                    phone=f"+91 98765 432{i:02d}",
+                    vehicle_type="Bike" if i % 2 == 0 else "Scooter",
+                    status="active"
+                )
+                db.add(partner)
+            db.commit()
+            print("Auto-seeding completed.")
+    except Exception as e:
+        print(f"Error during auto-seeding: {e}")
+    finally:
+        db.close()
+
+auto_seed_db()
 
 app = FastAPI(title="Smart Wheat Flour Delivery System", version="1.0.0")
 
@@ -30,6 +71,10 @@ class MiddayOrderRequest(BaseModel):
     phone: str
     address: str
     quantity: int
+
+class WarehouseRequest(BaseModel):
+    name: str
+    address: str
 
 # --- HTML VIEWS ---
 
@@ -151,6 +196,49 @@ def add_midday_order(payload: MiddayOrderRequest, db: Session = Depends(get_db))
     if res.get("status") == "error":
         raise HTTPException(status_code=400, detail=res.get("message"))
     return res
+
+@app.post("/api/warehouse")
+def add_or_update_warehouse(payload: WarehouseRequest, db: Session = Depends(get_db)):
+    from geocoder import geocode_address
+    
+    # Ensure it's in Mohali by appending if not present
+    addr = payload.address
+    if "mohali" not in addr.lower():
+        addr += ", Mohali, Punjab, India"
+        
+    lat, lon = geocode_address(db, addr)
+    if lat is None or lon is None:
+        raise HTTPException(status_code=400, detail="Failed to geocode warehouse address in Mohali.")
+        
+    # Check if a warehouse already exists
+    warehouse = db.query(Warehouse).first()
+    if warehouse:
+        warehouse.name = payload.name
+        warehouse.address = addr
+        warehouse.latitude = lat
+        warehouse.longitude = lon
+    else:
+        warehouse = Warehouse(
+            name=payload.name,
+            address=addr,
+            latitude=lat,
+            longitude=lon
+        )
+        db.add(warehouse)
+        
+    db.commit()
+    db.refresh(warehouse)
+    
+    return {
+        "status": "success",
+        "message": "Warehouse updated successfully.",
+        "id": warehouse.id,
+        "name": warehouse.name,
+        "address": warehouse.address,
+        "latitude": warehouse.latitude,
+        "longitude": warehouse.longitude
+    }
+
 
 @app.post("/api/orders/{order_id}/deliver")
 def deliver_order(order_id: int, db: Session = Depends(get_db)):
