@@ -358,3 +358,49 @@ async function submitWarehouse(event) {
     }
 }
 
+// Submit delivery partner creation
+async function submitPartner(event) {
+    event.preventDefault();
+    
+    const btn = document.getElementById("btn-submit-partner");
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Adding...`;
+    btn.disabled = true;
+    
+    const payload = {
+        name: document.getElementById("partner-name").value,
+        phone: document.getElementById("partner-phone").value,
+        vehicle_type: document.getElementById("partner-vehicle").value
+    };
+    
+    try {
+        const response = await fetch("/api/partners", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        
+        if (response.ok) {
+            alert("Delivery partner added successfully!");
+            
+            // Clear form
+            document.getElementById("partner-name").value = "";
+            document.getElementById("partner-phone").value = "";
+            document.getElementById("partner-vehicle").value = "Bike";
+            
+            // Reload stats and partners count in UI
+            await loadDashboardData();
+        } else {
+            const err = await response.json();
+            alert("Failed to add partner: " + (err.detail || "Unknown error"));
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Network connection error.");
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+

@@ -76,6 +76,12 @@ class WarehouseRequest(BaseModel):
     name: str
     address: str
 
+class PartnerRequest(BaseModel):
+    name: str
+    phone: str
+    vehicle_type: str
+
+
 # --- HTML VIEWS ---
 
 @app.get("/", response_class=HTMLResponse)
@@ -176,6 +182,24 @@ def get_partners(db: Session = Depends(get_db)):
         "vehicle_type": p.vehicle_type,
         "status": p.status
     } for p in partners]
+
+@app.post("/api/partners")
+def add_partner(payload: PartnerRequest, db: Session = Depends(get_db)):
+    partner = DeliveryPartner(
+        name=payload.name,
+        phone=payload.phone,
+        vehicle_type=payload.vehicle_type,
+        status="active"
+    )
+    db.add(partner)
+    db.commit()
+    db.refresh(partner)
+    return {
+        "status": "success",
+        "message": f"Delivery partner {partner.name} added successfully.",
+        "id": partner.id
+    }
+
 
 @app.post("/api/routes/optimize")
 def optimize_routes(db: Session = Depends(get_db)):
