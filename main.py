@@ -7,8 +7,11 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 import database
-from database import get_db, Warehouse, DeliveryPartner, Customer, Order, Route
+from database import get_db, Warehouse, DeliveryPartner, Customer, Order, Route, engine, Base
 from optimizer import run_delivery_optimization, handle_midday_new_order
+
+# Create database tables automatically on startup
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Smart Wheat Flour Delivery System", version="1.0.0")
 
