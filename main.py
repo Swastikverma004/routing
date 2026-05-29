@@ -29,28 +29,30 @@ def auto_seed_db():
             db.add(warehouse)
             db.commit()
             
-        if db.query(DeliveryPartner).count() == 0:
-            print("Auto-seeding 15 active delivery partners...")
-            names = [
-                "Aarav Sharma", "Kabir Singh", "Vihaan Patel", "Aditya Reddy", 
-                "Ishaan Gupta", "Sai Kumar", "Arjun Verma", "Rohan Mehta", 
-                "Krishna Murthy", "Pranav Joshi", "Devendra Singh", "Yash Wardhan",
-                "Anirudh Nair", "Madhav Rao", "Kartik Iyer"
-            ]
-            for i, name in enumerate(names):
-                partner = DeliveryPartner(
-                    name=name,
-                    phone=f"+91 98765 432{i:02d}",
-                    vehicle_type="Bike" if i % 2 == 0 else "Scooter",
-                    status="active"
-                )
-                db.add(partner)
-            db.commit()
-            print("Auto-seeding completed.")
+            # Seed partners only on initial setup when warehouse is also empty
+            if db.query(DeliveryPartner).count() == 0:
+                print("Auto-seeding 15 active delivery partners...")
+                names = [
+                    "Aarav Sharma", "Kabir Singh", "Vihaan Patel", "Aditya Reddy", 
+                    "Ishaan Gupta", "Sai Kumar", "Arjun Verma", "Rohan Mehta", 
+                    "Krishna Murthy", "Pranav Joshi", "Devendra Singh", "Yash Wardhan",
+                    "Anirudh Nair", "Madhav Rao", "Kartik Iyer"
+                ]
+                for i, name in enumerate(names):
+                    partner = DeliveryPartner(
+                        name=name,
+                        phone=f"+91 98765 432{i:02d}",
+                        vehicle_type="Bike" if i % 2 == 0 else "Scooter",
+                        status="active"
+                    )
+                    db.add(partner)
+                db.commit()
+                print("Auto-seeding completed.")
     except Exception as e:
         print(f"Error during auto-seeding: {e}")
     finally:
         db.close()
+
 
 auto_seed_db()
 
@@ -199,6 +201,31 @@ def add_partner(payload: PartnerRequest, db: Session = Depends(get_db)):
         "message": f"Delivery partner {partner.name} added successfully.",
         "id": partner.id
     }
+
+
+@app.delete("/api/partners/{partner_id}")
+def delete_partner(partner_id: int, db: Session = Depends(get_db)):
+    partner = db.query(DeliveryPartner).filter(DeliveryPartner.id == partner_id).first()
+    if not partner:
+        raise HTTPException(status_code=404, detail="Delivery partner not found")
+        
+    # Find routes associated with this partner
+    routes = db.query(Route).filter(Route.partner_id == partner_id).all()
+    for route in routes:
+        # Unassign orders
+        for order in route.orders:
+            order.route_id = None
+            order.sequence_number = None
+            order.status = "pending"
+        db.delete(route)
+        
+    db.delete(partner)
+    db.commit()
+    return {
+        "status": "success",
+        "message": f"Partner {partner.name} deleted successfully."
+    }
+
 
 
 @app.post("/api/routes/optimize")

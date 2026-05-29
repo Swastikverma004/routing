@@ -68,10 +68,18 @@ async function loadDashboardData() {
             const routes = await routesResponse.json();
             renderRoutesAndMap(routes);
         }
+
+        // 3. Fetch Partners
+        const partnersResponse = await fetch("/api/partners");
+        if (partnersResponse.ok) {
+            const partners = await partnersResponse.json();
+            renderPartnersList(partners);
+        }
     } catch (err) {
         console.error("Error loading dashboard data:", err);
     }
 }
+
 
 // Draw routes on map and populate sidebar list
 function renderRoutesAndMap(routes) {
@@ -402,5 +410,81 @@ async function submitPartner(event) {
         btn.disabled = false;
     }
 }
+
+// Render partners list in sidebar
+function renderPartnersList(partners) {
+    const container = document.getElementById("partners-list");
+    if (!container) return;
+    
+    container.innerHTML = "";
+    
+    if (partners.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; color: var(--text-muted); font-size: 0.8rem; padding: 12px;">
+                No delivery partners found. Add one above!
+            </div>
+        `;
+        return;
+    }
+    
+    partners.forEach(partner => {
+        // Choose vehicle icon based on vehicle type
+        let vehicleIcon = "fa-motorcycle";
+        if (partner.vehicle_type === "Electric Three-Wheeler") {
+            vehicleIcon = "fa-truck-pickup";
+        } else if (partner.vehicle_type === "Mini-Truck") {
+            vehicleIcon = "fa-truck";
+        }
+        
+        const item = document.createElement("div");
+        item.className = "partner-list-item";
+        item.style.display = "flex";
+        item.style.justify = "space-between";
+        item.style.alignItems = "center";
+        item.style.padding = "8px 12px";
+        item.style.background = "#f8fafc";
+        item.style.borderRadius = "8px";
+        item.style.border = "1px solid var(--border)";
+        item.style.transition = "all 0.2s";
+        
+        item.innerHTML = `
+            <div>
+                <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">${partner.name}</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">
+                    <i class="fa-solid ${vehicleIcon}" style="margin-right: 4px;"></i> ${partner.vehicle_type} &bull; ${partner.phone || 'No phone'}
+                </div>
+            </div>
+            <button onclick="deletePartner(${partner.id}, '${partner.name.replace(/'/g, "\\'")}')" style="background: none; border: none; color: var(--danger); cursor: pointer; padding: 4px 8px; font-size: 0.85rem; transition: color 0.1s;" title="Delete Partner">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+        `;
+        container.appendChild(item);
+    });
+}
+
+// Delete delivery partner
+async function deletePartner(partnerId, partnerName) {
+    if (!confirm(`Are you sure you want to delete delivery partner "${partnerName}"?\nAny active route assigned to this partner will be deleted, and their assigned orders will be set back to pending.`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/partners/${partnerId}`, {
+            method: "DELETE"
+        });
+        
+        if (response.ok) {
+            alert(`Partner "${partnerName}" deleted successfully.`);
+            await loadDashboardData();
+        } else {
+            const err = await response.json();
+            alert("Failed to delete partner: " + (err.detail || "Unknown error"));
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Network connection error.");
+    }
+}
+
 
 
